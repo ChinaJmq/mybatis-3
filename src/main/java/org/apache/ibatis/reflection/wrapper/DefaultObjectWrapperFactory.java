@@ -20,6 +20,7 @@ import org.apache.ibatis.reflection.ReflectionException;
 
 /**
  * @author Clinton Begin
+ * 实现 ObjectWrapperFactory 接口，默认 ObjectWrapperFactory 实现类
  */
 public class DefaultObjectWrapperFactory implements ObjectWrapperFactory {
 

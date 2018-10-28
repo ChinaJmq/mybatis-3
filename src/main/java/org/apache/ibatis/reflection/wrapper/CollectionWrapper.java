@@ -24,6 +24,8 @@ import org.apache.ibatis.reflection.property.PropertyTokenizer;
 
 /**
  * @author Clinton Begin
+ * 集合 ObjectWrapper 实现类,
+ * 仅仅支持 #add(Object element) 和 #addAll(List<E> element) 两个操作方法。
  */
 public class CollectionWrapper implements ObjectWrapper {
 
