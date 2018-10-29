@@ -15,6 +15,7 @@
  */
 package org.apache.ibatis.transaction.jdbc;
 
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
 import javax.sql.DataSource;
@@ -34,14 +35,27 @@ import org.apache.ibatis.transaction.TransactionException;
  * @author Clinton Begin
  *
  * @see JdbcTransactionFactory
+ *
+ * 基于 JDBC 的事务实现类
  */
 public class JdbcTransaction implements Transaction {
 
   private static final Log log = LogFactory.getLog(JdbcTransaction.class);
-
+  /**
+   * Connection 对象
+   */
   protected Connection connection;
+  /**
+   * DataSource 对象
+   */
   protected DataSource dataSource;
+  /**
+   * 事务隔离级别
+   */
   protected TransactionIsolationLevel level;
+  /**
+   * 是否自动提交
+   */
   protected boolean autoCommit;
 
   public JdbcTransaction(DataSource ds, TransactionIsolationLevel desiredLevel, boolean desiredAutoCommit) {
@@ -56,6 +70,7 @@ public class JdbcTransaction implements Transaction {
 
   @Override
   public Connection getConnection() throws SQLException {
+    // 连接为空，进行创建
     if (connection == null) {
       openConnection();
     }
@@ -64,6 +79,7 @@ public class JdbcTransaction implements Transaction {
 
   @Override
   public void commit() throws SQLException {
+    // 非自动提交，则执行提交事务
     if (connection != null && !connection.getAutoCommit()) {
       if (log.isDebugEnabled()) {
         log.debug("Committing JDBC Connection [" + connection + "]");
@@ -74,6 +90,7 @@ public class JdbcTransaction implements Transaction {
 
   @Override
   public void rollback() throws SQLException {
+    // 非自动提交。则回滚事务
     if (connection != null && !connection.getAutoCommit()) {
       if (log.isDebugEnabled()) {
         log.debug("Rolling back JDBC Connection [" + connection + "]");
@@ -82,17 +99,32 @@ public class JdbcTransaction implements Transaction {
     }
   }
 
+  /**
+   * 既然要销毁conn，为何还多此一举的调用一个resetAutoCommit()呢？
+   *
+   * 其实，原因是这样的，connection.close()不意味着真的要销毁conn，而是要把conn放回连接池，供下一次使用，
+   * 既然还要使用，自然就需要重置AutoCommit属性了。通过生成connection代理类，来实现重回连接池的功能。
+   * 如果connection是普通的Connection实例，那么代码也是没有问题的，双重支持
+   * 具体看{@link org.apache.ibatis.datasource.pooled.PooledConnection#invoke(Object, Method, Object[])}
+   * @throws SQLException
+   */
   @Override
   public void close() throws SQLException {
     if (connection != null) {
+      // 重置连接为自动提交
       resetAutoCommit();
       if (log.isDebugEnabled()) {
         log.debug("Closing JDBC Connection [" + connection + "]");
       }
+      // 关闭连接
       connection.close();
     }
   }
-
+  /**
+   * 设置指定的 autoCommit 属性
+   *
+   * @param desiredAutoCommit 指定的 autoCommit 属性
+   */
   protected void setDesiredAutoCommit(boolean desiredAutoCommit) {
     try {
       if (connection.getAutoCommit() != desiredAutoCommit) {
@@ -109,7 +141,9 @@ public class JdbcTransaction implements Transaction {
           + "Requested setting: " + desiredAutoCommit + ".  Cause: " + e, e);
     }
   }
-
+  /**
+   * 重置 autoCommit 属性
+   */
   protected void resetAutoCommit() {
     try {
       if (!connection.getAutoCommit()) {
@@ -130,15 +164,22 @@ public class JdbcTransaction implements Transaction {
       }
     }
   }
-
+  /**
+   * 获得 Connection 对象
+   *
+   * @throws SQLException 获得失败
+   */
   protected void openConnection() throws SQLException {
     if (log.isDebugEnabled()) {
       log.debug("Opening JDBC Connection");
     }
+    // 获得连接
     connection = dataSource.getConnection();
+    // 设置隔离级别
     if (level != null) {
       connection.setTransactionIsolation(level.getLevel());
     }
+    // 设置 autoCommit 属性
     setDesiredAutoCommit(autoCommit);
   }
 
