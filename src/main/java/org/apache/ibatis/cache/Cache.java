@@ -37,22 +37,26 @@ import java.util.concurrent.locks.ReadWriteLock;
  * </pre>
  *
  * @author Clinton Begin
+ *
+ * ，缓存容器接口。注意，它是一个容器，有点类似 HashMap ，可以往其中添加各种缓存
  */
 
 public interface Cache {
 
   /**
-   * @return The identifier of this cache
+   * @return The identifier of this cache 标识
    */
   String getId();
 
   /**
+   * 添加指定键的值
    * @param key Can be any object but usually it is a {@link CacheKey}
    * @param value The result of a select.
    */
   void putObject(Object key, Object value);
 
   /**
+   * 获得指定键的值
    * @param key The key
    * @return The object stored in the cache.
    */
@@ -68,7 +72,7 @@ public interface Cache {
    * This way other threads will wait for the value to be 
    * available instead of hitting the database.
    *
-   * 
+   *  移除指定键的值
    * @param key The key
    * @return Not used
    */
@@ -76,12 +80,13 @@ public interface Cache {
 
   /**
    * Clears this cache instance
+   * 清空缓存
    */  
   void clear();
 
   /**
    * Optional. This method is not called by the core.
-   * 
+   * 获得容器中缓存的数量
    * @return The number of elements stored in the cache (not its capacity).
    */
   int getSize();
@@ -91,7 +96,8 @@ public interface Cache {
    *  
    * Any locking needed by the cache must be provided internally by the cache provider.
    * 
-   * @return A ReadWriteLock 
+   * @return A ReadWriteLock
+   * 获得读取写锁。该方法可以忽略了已经。
    */
   ReadWriteLock getReadWriteLock();
 

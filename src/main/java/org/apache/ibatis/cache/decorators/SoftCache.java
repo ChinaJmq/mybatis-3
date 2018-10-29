@@ -28,11 +28,28 @@ import org.apache.ibatis.cache.Cache;
  * Thanks to Dr. Heinz Kabutz for his guidance here.
  *
  * @author Clinton Begin
+ *
+ * 基于 java.lang.ref.SoftReference 的 Cache 实现类
+ * 4种引用类型文章推荐https://juejin.im/post/5a5129f5f265da3e317dfc08
+ *
+ * 实现逻辑上，和 WeakCache 是一致的，差异在使用 SoftEntry 替代了 WeakEntry 类
  */
 public class SoftCache implements Cache {
+  /**
+   * 强引用的键的队列
+   */
   private final Deque<Object> hardLinksToAvoidGarbageCollection;
+  /**
+   * 引用队列
+   */
   private final ReferenceQueue<Object> queueOfGarbageCollectedEntries;
+  /**
+   * 委托的 Cache 对象
+   */
   private final Cache delegate;
+  /**
+   * {@link #hardLinksToAvoidGarbageCollection} 的大小
+   */
   private int numberOfHardLinks;
 
   public SoftCache(Cache delegate) {
