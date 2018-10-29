@@ -34,20 +34,26 @@ public class JndiDataSourceFactory implements DataSourceFactory {
   public static final String INITIAL_CONTEXT = "initial_context";
   public static final String DATA_SOURCE = "data_source";
   public static final String ENV_PREFIX = "env.";
-
+  /**
+   * 不同于 UnpooledDataSourceFactory 和 PooledDataSourceFactory ,
+   * dataSource 不在构造方法中创建，而是在 #setProperties(Properties properties) 中
+   */
   private DataSource dataSource;
 
   @Override
   public void setProperties(Properties properties) {
     try {
       InitialContext initCtx;
+      // <1> 获得系统 Properties 对象
       Properties env = getEnvProperties(properties);
+      // 创建 InitialContext 对象
       if (env == null) {
         initCtx = new InitialContext();
       } else {
         initCtx = new InitialContext(env);
       }
 
+      // 从 InitialContext 上下文中，获取 DataSource 对象
       if (properties.containsKey(INITIAL_CONTEXT)
           && properties.containsKey(DATA_SOURCE)) {
         Context ctx = (Context) initCtx.lookup(properties.getProperty(INITIAL_CONTEXT));
@@ -66,6 +72,11 @@ public class JndiDataSourceFactory implements DataSourceFactory {
     return dataSource;
   }
 
+  /**
+   * 获得系统 Properties 对象
+   * @param allProps
+   * @return
+   */
   private static Properties getEnvProperties(Properties allProps) {
     final String PREFIX = ENV_PREFIX;
     Properties contextProperties = null;
