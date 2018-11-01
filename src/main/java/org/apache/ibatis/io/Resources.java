@@ -27,16 +27,19 @@ import java.util.Properties;
 
 /**
  * A class to simplify access to resources through the classloader.
- *
+ * 基于 classLoaderWrapper 属性的封装
  * @author Clinton Begin
  */
 public class Resources {
-
+  /**
+   * ClassLoaderWrapper 对象
+   */
   private static ClassLoaderWrapper classLoaderWrapper = new ClassLoaderWrapper();
 
   /**
    * Charset to use when calling getResourceAsReader.
    * null means use the system default.
+   * 字符集
    */
   private static Charset charset;
 
@@ -54,7 +57,7 @@ public class Resources {
 
   /**
    * Sets the default classloader
-   *
+   * 修改 ClassLoaderWrapper.
    * @param defaultClassLoader - the new default ClassLoader
    */
   public static void setDefaultClassLoader(ClassLoader defaultClassLoader) {
@@ -133,7 +136,7 @@ public class Resources {
 
   /**
    * Returns a resource on the classpath as a Properties object
-   *
+   * 获得指定资源的 Properties
    * @param loader   The classloader used to fetch the resource
    * @param resource The resource to find
    * @return The resource
@@ -149,7 +152,7 @@ public class Resources {
 
   /**
    * Returns a resource on the classpath as a Reader object
-   *
+   * 获得指定资源的 Reader
    * @param resource The resource to find
    * @return The resource
    * @throws java.io.IOException If the resource cannot be found or read
@@ -184,7 +187,7 @@ public class Resources {
 
   /**
    * Returns a resource on the classpath as a File object
-   *
+   * 获得指定资源的 File
    * @param resource The resource to find
    * @return The resource
    * @throws java.io.IOException If the resource cannot be found or read

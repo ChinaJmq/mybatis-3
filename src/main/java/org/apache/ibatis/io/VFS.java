@@ -29,20 +29,25 @@ import org.apache.ibatis.logging.LogFactory;
 
 /**
  * Provides a very simple API for accessing resources within an application server.
- * 
+ *  虚拟文件系统( Virtual File System )抽象类，用来查找指定路径下的的文件们
  * @author Ben Gunter
  */
 public abstract class VFS {
   private static final Log log = LogFactory.getLog(VFS.class);
 
   /** The built-in implementations. */
+  // 内置的 VFS 实现类的数组
   public static final Class<?>[] IMPLEMENTATIONS = { JBoss6VFS.class, DefaultVFS.class };
 
   /** The list to which implementations are added by {@link #addImplClass(Class)}. */
+  // 自定义的 VFS 实现类的数组,可通过 #addImplClass(Class<? extends VFS> clazz) 方法，进行添加
   public static final List<Class<? extends VFS>> USER_IMPLEMENTATIONS = new ArrayList<>();
 
   /** Singleton instance holder. */
+  //静态内部类方式的单例模式
   private static class VFSHolder {
+    //单例有多种实现方式，该类采用的是“懒汉式，线程安全”
+    //单例模式的七种写法 http://cantellow.iteye.com/blog/838473
     static final VFS INSTANCE = createVFS();
 
     @SuppressWarnings("unchecked")
@@ -53,6 +58,7 @@ public abstract class VFS {
       impls.addAll(Arrays.asList((Class<? extends VFS>[]) IMPLEMENTATIONS));
 
       // Try each implementation class until a valid one is found
+      // 创建 VFS 对象，选择最后一个符合的
       VFS vfs = null;
       for (int i = 0; vfs == null || !vfs.isValid(); i++) {
         Class<? extends VFS> impl = impls.get(i);
@@ -175,6 +181,7 @@ public abstract class VFS {
   }
 
   /** Return true if the {@link VFS} implementation is valid for the current environment. */
+  //判断是否为合法的 VFS
   public abstract boolean isValid();
 
   /**
@@ -192,6 +199,7 @@ public abstract class VFS {
   /**
    * Recursively list the full resource path of all the resources that are children of all the
    * resources found at the specified path.
+   * 获得指定路径下的所有资源
    * 
    * @param path The path of the resource(s) to list.
    * @return A list containing the names of the child resources.
