@@ -21,6 +21,7 @@ import java.util.Map;
 
 /**
  * @author Clinton Begin
+ * Jdbc Type 枚举
  */
 public enum JdbcType {
   /*

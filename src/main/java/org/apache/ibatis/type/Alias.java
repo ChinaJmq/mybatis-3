@@ -23,10 +23,14 @@ import java.lang.annotation.Target;
 
 /**
  * @author Clinton Begin
+ * 别名的注解
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Alias {
+  /**
+   * @return 别名
+   */
   String value();
 }
