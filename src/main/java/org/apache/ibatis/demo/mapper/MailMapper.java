@@ -15,6 +15,7 @@
  */
 package org.apache.ibatis.demo.mapper;
 
+import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.demo.pojo.Mail;
 
 import java.util.List;
@@ -25,6 +26,12 @@ import java.util.List;
  * @author mingqiang ji
  */
 public interface MailMapper {
+    /**
+     * 根据主键id查询一条邮箱信息
+     */
+    //@Select("SELECT * FROM mail where id = #{id}")
+    public Mail selectMailById(int id);
+
     /**
      * 插入一条邮箱信息
      */
@@ -45,10 +52,8 @@ public interface MailMapper {
      */
     public List<Mail> selectMailList();
 
-    /**
-     * 根据主键id查询一条邮箱信息
-     */
-    public Mail selectMailById(long id);
+    public List<Mail> getSubjectList(List ids);
+
 
 }
 

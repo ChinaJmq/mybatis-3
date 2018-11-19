@@ -31,14 +31,29 @@ import org.apache.ibatis.session.Configuration;
  * <p>
  * Can also have additional parameters that are created by the dynamic language (for loops, bind...).
  *
+ * 一次可执行的 SQL 封装
  * @author Clinton Begin
  */
 public class BoundSql {
-
+  /**
+   * SQL 语句
+   */
   private final String sql;
+  /**
+   * ParameterMapping 数组
+   */
   private final List<ParameterMapping> parameterMappings;
+  /**
+   * 参数对象
+   */
   private final Object parameterObject;
+  /**
+   * 附加的参数集合
+   */
   private final Map<String, Object> additionalParameters;
+  /**
+   * {@link #additionalParameters} 的 MetaObject 对象
+   */
   private final MetaObject metaParameters;
 
   public BoundSql(Configuration configuration, String sql, List<ParameterMapping> parameterMappings, Object parameterObject) {

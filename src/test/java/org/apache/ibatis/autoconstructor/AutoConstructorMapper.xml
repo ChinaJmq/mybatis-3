@@ -21,4 +21,21 @@
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="org.apache.ibatis.autoconstructor.AutoConstructorMapper">
+    <select id="getSubjectList" parameterType="List" resultType="List">
+        SELECT id FROM subject
+        WHERE id IN
+        <foreach collection="ids" index="idx" item="item" open="("  close=")" separator=",">
+            #{item}
+        </foreach>
+    </select>
+
+    <select id="getSubjecById" parameterType="int" resultType="org.apache.ibatis.autoconstructor.PrimitiveSubject">
+        SELECT id FROM subject
+        <where>
+            <if test="id != null">
+                id = #{id}
+            </if>
+        </where>
+
+    </select>
 </mapper>

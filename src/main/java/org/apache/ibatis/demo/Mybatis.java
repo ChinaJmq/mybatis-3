@@ -15,6 +15,7 @@
  */
 package org.apache.ibatis.demo;
 
+import org.apache.ibatis.demo.mapper.MailMapper;
 import org.apache.ibatis.demo.pojo.Mail;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
@@ -23,6 +24,8 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * Created by QDHL on 2018/10/13.
@@ -39,9 +42,23 @@ public class Mybatis {
 
             SqlSession session = sqlMapper.openSession();
             try {
-                Mail mail = (Mail) session.selectOne("org.apache.ibatis.demo.mapper.MailMapper.selectMailById", 1);
+                MailMapper mapper = session.getMapper(MailMapper.class);
+//                Mail mail = mapper.selectMailById(1);
+//                System.out.println(mail.getMail());
+                ArrayList<Integer> ids = new ArrayList<>();
+                ids.add(1);
+                ids.add(2);
+                mapper.getSubjectList(ids);
+               /* Mail mail1 = new Mail();
+                mail1.setMail("11111");
+                mail1.setWebId(2);
+                mail1.setCreateTime(new Date());
+                mapper.insertMail(mail1);
+                System.out.println(mail1.getId());*/
+               /* Mail mail = (Mail) session.selectOne("org.apache.ibatis.demo.mapper.MailMapper.selectMailById", 1);
+                System.out.println(mail.getWebId());*/
 
-                System.out.println(mail.getId()+"222222222");
+
             } finally {
                 session.close();
             }

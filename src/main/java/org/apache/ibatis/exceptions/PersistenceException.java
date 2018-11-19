@@ -17,6 +17,7 @@ package org.apache.ibatis.exceptions;
 
 /**
  * @author Clinton Begin
+ * 继承 IbatisException 类，目前 MyBatis 真正的异常基类
  */
 @SuppressWarnings("deprecation")
 public class PersistenceException extends IbatisException {

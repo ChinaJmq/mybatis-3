@@ -35,19 +35,61 @@ import org.apache.ibatis.session.Configuration;
  * @author Clinton Begin
  */
 public class ResultMap {
+  /**
+   * Configuration 对象
+   */
   private Configuration configuration;
-
+  /**
+   * ResultMap 对象的id
+   */
   private String id;
+  /**
+   * 类型
+   */
   private Class<?> type;
+  /**
+   * ResultMapping 集合
+   */
   private List<ResultMapping> resultMappings;
+  /**
+   * ID ResultMapping 集合
+   *
+   * 当 idResultMappings 为空时，使用 {@link #resultMappings} 赋值
+   */
   private List<ResultMapping> idResultMappings;
+  /**
+   * 构造方法 ResultMapping 集合
+   *
+   * 和 {@link #propertyResultMappings} 只有一个值
+   */
   private List<ResultMapping> constructorResultMappings;
+  /**
+   * 属性 ResultMapping 集合
+   */
   private List<ResultMapping> propertyResultMappings;
+  /**
+   * 数据库的字段集合
+   */
   private Set<String> mappedColumns;
+  /**
+   * Java 对象的属性集合
+   */
   private Set<String> mappedProperties;
+  /**
+   * Discriminator 对象
+   */
   private Discriminator discriminator;
+  /**
+   * 是否有内嵌的 ResultMap
+   */
   private boolean hasNestedResultMaps;
+  /**
+   * 是否有内嵌的查询
+   */
   private boolean hasNestedQueries;
+  /**
+   * 是否开启自动匹配
+   */
   private Boolean autoMapping;
 
   private ResultMap() {
@@ -80,20 +122,30 @@ public class ResultMap {
     }
 
     public ResultMap build() {
+      //必须设置属性id
       if (resultMap.id == null) {
         throw new IllegalArgumentException("ResultMaps must have an id");
       }
+      //column集合
       resultMap.mappedColumns = new HashSet<>();
+      //Propert集合
       resultMap.mappedProperties = new HashSet<>();
+      //<id/></idarg/>ResultMapping集合
       resultMap.idResultMappings = new ArrayList<>();
+      //构造方法ResultMapping集合
       resultMap.constructorResultMappings = new ArrayList<>();
+      //property的ResultMapping集合
       resultMap.propertyResultMappings = new ArrayList<>();
+      //构造方法参数name
       final List<String> constructorArgNames = new ArrayList<>();
+      //遍历resultMappings
       for (ResultMapping resultMapping : resultMap.resultMappings) {
         resultMap.hasNestedQueries = resultMap.hasNestedQueries || resultMapping.getNestedQueryId() != null;
         resultMap.hasNestedResultMaps = resultMap.hasNestedResultMaps || (resultMapping.getNestedResultMapId() != null && resultMapping.getResultSet() == null);
+        //column属性值
         final String column = resultMapping.getColumn();
         if (column != null) {
+          //添加到column集合中
           resultMap.mappedColumns.add(column.toUpperCase(Locale.ENGLISH));
         } else if (resultMapping.isCompositeResult()) {
           for (ResultMapping compositeResultMapping : resultMapping.getComposites()) {
@@ -115,6 +167,7 @@ public class ResultMap {
         } else {
           resultMap.propertyResultMappings.add(resultMapping);
         }
+        //如果是<idArg/> 或者<id/>节点
         if (resultMapping.getFlags().contains(ResultFlag.ID)) {
           resultMap.idResultMappings.add(resultMapping);
         }
@@ -137,6 +190,7 @@ public class ResultMap {
         });
       }
       // lock down collections
+      //设置不可变的
       resultMap.resultMappings = Collections.unmodifiableList(resultMap.resultMappings);
       resultMap.idResultMappings = Collections.unmodifiableList(resultMap.idResultMappings);
       resultMap.constructorResultMappings = Collections.unmodifiableList(resultMap.constructorResultMappings);
@@ -146,20 +200,32 @@ public class ResultMap {
     }
 
     private List<String> argNamesOfMatchingConstructor(List<String> constructorArgNames) {
+      // 获得所有构造方法
       Constructor<?>[] constructors = resultMap.type.getDeclaredConstructors();
+      // 遍历所有构造方法
       for (Constructor<?> constructor : constructors) {
         Class<?>[] paramTypes = constructor.getParameterTypes();
+        // 参数数量一致
         if (constructorArgNames.size() == paramTypes.length) {
+          // 获得构造方法的参数名的数组
           List<String> paramNames = getArgNames(constructor);
-          if (constructorArgNames.containsAll(paramNames)
-              && argTypesMatch(constructorArgNames, paramTypes, paramNames)) {
+          if (constructorArgNames.containsAll(paramNames)// 判断名字
+              && argTypesMatch(constructorArgNames, paramTypes, paramNames)) { // 判断类型
+
             return paramNames;
           }
         }
       }
       return null;
     }
-
+    /**
+     * 判断构造方法的参数类型是否符合
+     *
+     * @param constructorArgNames 构造方法的参数名数组
+     * @param paramTypes 构造方法的参数类型数组
+     * @param paramNames 声明的参数名数组
+     * @return 是否符合
+     */
     private boolean argTypesMatch(final List<String> constructorArgNames,
         Class<?>[] paramTypes, List<String> paramNames) {
       for (int i = 0; i < constructorArgNames.size(); i++) {
@@ -178,7 +244,14 @@ public class ResultMap {
       }
       return true;
     }
-
+    /**
+     * 获得构造方法的参数名的数组
+     *
+     * 因为参数上会有 {@link Param} 注解，所以会使用注解上设置的名字
+     *
+     * @param constructor 构造方法
+     * @return 参数名数组
+     */
     private List<String> getArgNames(Constructor<?> constructor) {
       List<String> paramNames = new ArrayList<>();
       List<String> actualParamNames = null;

@@ -44,9 +44,31 @@ public class SqlSessionFactoryBuilder {
     return build(reader, null, properties);
   }
 
+  public SqlSessionFactory build(InputStream inputStream) {
+    return build(inputStream, null, null);
+  }
+
+  public SqlSessionFactory build(InputStream inputStream, String environment) {
+    return build(inputStream, environment, null);
+  }
+
+  public SqlSessionFactory build(InputStream inputStream, Properties properties) {
+    return build(inputStream, null, properties);
+  }
+
+  /**
+   * 根据配置创建SqlSessionFactory
+   * @param reader
+   * @param environment
+   * @param properties
+   * @return
+   */
   public SqlSessionFactory build(Reader reader, String environment, Properties properties) {
     try {
+      // <1> 创建 XMLConfigBuilder 对象
       XMLConfigBuilder parser = new XMLConfigBuilder(reader, environment, properties);
+      // <2> 执行 XML 解析
+      // <3> 创建 DefaultSqlSessionFactory 对象
       return build(parser.parse());
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error building SqlSession.", e);
@@ -58,18 +80,6 @@ public class SqlSessionFactoryBuilder {
         // Intentionally ignore. Prefer previous error.
       }
     }
-  }
-
-  public SqlSessionFactory build(InputStream inputStream) {
-    return build(inputStream, null, null);
-  }
-
-  public SqlSessionFactory build(InputStream inputStream, String environment) {
-    return build(inputStream, environment, null);
-  }
-
-  public SqlSessionFactory build(InputStream inputStream, Properties properties) {
-    return build(inputStream, null, properties);
   }
 
   public SqlSessionFactory build(InputStream inputStream, String environment, Properties properties) {
@@ -87,7 +97,12 @@ public class SqlSessionFactoryBuilder {
       }
     }
   }
-    
+
+  /**
+   * 创建默认的SqlSessionFactory
+    * @param config
+   * @return
+   */
   public SqlSessionFactory build(Configuration config) {
     return new DefaultSqlSessionFactory(config);
   }

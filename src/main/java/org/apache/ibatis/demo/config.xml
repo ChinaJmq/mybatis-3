@@ -21,6 +21,13 @@
 
      <configuration>
 
+    <!--<typeAliases>
+        <package name="org.apache.ibatis.demo.pojo"/>
+    </typeAliases>-->
+
+    <typeAliases>
+        <typeAlias alias="Mail" type="org.apache.ibatis.demo.pojo.Mail"/>
+    </typeAliases>
 
     <environments default="development">
         <environment id="development">
@@ -36,5 +43,7 @@
     <mappers>
         <mapper resource="org/apache/ibatis/demo/mapper/MailMapper.xml"/>
     </mappers>
-
+    <!--<mappers>
+        <mapper class="org.apache.ibatis.demo.mapper.MailMapper"/>
+    </mappers>-->
     </configuration>

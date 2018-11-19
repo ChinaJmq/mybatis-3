@@ -15,6 +15,7 @@
  */
 package org.apache.ibatis.autoconstructor;
 
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -34,4 +35,8 @@ public interface AutoConstructorMapper {
 
   @Select("SELECT * FROM extensive_subject")
   List<ExtensiveSubject> getExtensiveSubject();
+
+  List getSubjectList(@Param("ids")  List ids);
+
+  PrimitiveSubject getSubjecById(int id);
 }

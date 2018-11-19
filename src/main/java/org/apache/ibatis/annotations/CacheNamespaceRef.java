@@ -35,11 +35,13 @@ import java.lang.annotation.Target;
 public @interface CacheNamespaceRef {
   /**
    * A namespace type to reference a cache (the namespace name become a FQCN of specified type)
+   * 见 {@link MapperAnnotationBuilder#parseCacheRef()} 方法
    */
   Class<?> value() default void.class;
   /**
    * A namespace name to reference a cache
    * @since 3.4.2
+   *  指向的命名空间
    */
   String name() default "";
 }

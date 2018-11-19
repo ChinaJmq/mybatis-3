@@ -95,7 +95,9 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
  * @author Clinton Begin
  */
 public class Configuration {
-
+  /**
+   * DB Environment 对象
+   */
   protected Environment environment;
 
   protected boolean safeRowBoundsEnabled;
@@ -112,6 +114,9 @@ public class Configuration {
 
   protected String logPrefix;
   protected Class <? extends Log> logImpl;
+  /**
+   * VFS 实现类
+   */
   protected Class <? extends VFS> vfsImpl;
   protected LocalCacheScope localCacheScope = LocalCacheScope.SESSION;
   protected JdbcType jdbcTypeForNull = JdbcType.OTHER;
@@ -123,13 +128,24 @@ public class Configuration {
   protected AutoMappingUnknownColumnBehavior autoMappingUnknownColumnBehavior = AutoMappingUnknownColumnBehavior.NONE;
 
   protected Properties variables = new Properties();
+  /**
+   * ReflectorFactory 对象
+   */
   protected ReflectorFactory reflectorFactory = new DefaultReflectorFactory();
+  /**
+   * ObjectFactory 对象
+   */
   protected ObjectFactory objectFactory = new DefaultObjectFactory();
+  /**
+   * ObjectWrapperFactory 对象
+   */
   protected ObjectWrapperFactory objectWrapperFactory = new DefaultObjectWrapperFactory();
 
   protected boolean lazyLoadingEnabled = false;
   protected ProxyFactory proxyFactory = new JavassistProxyFactory(); // #224 Using internal Javassist instead of OGNL
-
+  /**
+   * 数据库标识
+   */
   protected String databaseId;
   /**
    * Configuration factory class.
@@ -140,29 +156,63 @@ public class Configuration {
   protected Class<?> configurationFactory;
 
   protected final MapperRegistry mapperRegistry = new MapperRegistry(this);
+  /**
+   * 拦截器链
+   */
   protected final InterceptorChain interceptorChain = new InterceptorChain();
   protected final TypeHandlerRegistry typeHandlerRegistry = new TypeHandlerRegistry();
   protected final TypeAliasRegistry typeAliasRegistry = new TypeAliasRegistry();
   protected final LanguageDriverRegistry languageRegistry = new LanguageDriverRegistry();
-
+  /**
+   * MappedStatement的映射，key=Namespace+id
+   * vaule = MappedStatement
+   */
   protected final Map<String, MappedStatement> mappedStatements = new StrictMap<>("Mapped Statements collection");
+  /**
+   * key 为namespace
+   */
   protected final Map<String, Cache> caches = new StrictMap<>("Caches collection");
+  /**
+   * resultMap的映射，key=Namespace+id
+   * vaule = ResultMap
+  */
   protected final Map<String, ResultMap> resultMaps = new StrictMap<>("Result Maps collection");
   protected final Map<String, ParameterMap> parameterMaps = new StrictMap<>("Parameter Maps collection");
+  /**
+   * KeyGenerator 的映射
+   *
+   * KEY：在 {@link #mappedStatements} 的 KEY 的基础上，跟上 {@link SelectKeyGenerator#SELECT_KEY_SUFFIX}
+   */
   protected final Map<String, KeyGenerator> keyGenerators = new StrictMap<>("Key Generators collection");
-
+  /**
+   * 已加载资源( Resource )集合
+   */
   protected final Set<String> loadedResources = new HashSet<>();
   protected final Map<String, XNode> sqlFragments = new StrictMap<>("XML fragments parsed from previous mappers");
-
+  /**
+   * 解析失败的XMLStatementBuilder 集合
+   */
   protected final Collection<XMLStatementBuilder> incompleteStatements = new LinkedList<>();
+  /**
+   * 解析失败的CacheRefResolver 集合
+   */
   protected final Collection<CacheRefResolver> incompleteCacheRefs = new LinkedList<>();
+  /**
+   * 解析失败的ResultMapResolver 集合
+   */
   protected final Collection<ResultMapResolver> incompleteResultMaps = new LinkedList<>();
+  /**
+   *解析失败的 MethodResolver 集合
+   */
   protected final Collection<MethodResolver> incompleteMethods = new LinkedList<>();
 
   /*
    * A map holds cache-ref relationship. The key is the namespace that
    * references a cache bound to another namespace and the value is the
    * namespace which the actual cache is bound to.
+   *
+   *  Cache 指向的映射
+   *  key 当前的nameSpace  value 缓存引用指向的nameSpace
    */
   protected final Map<String, String> cacheRefMap = new HashMap<>();
 
@@ -200,8 +250,9 @@ public class Configuration {
 
     typeAliasRegistry.registerAlias("CGLIB", CglibProxyFactory.class);
     typeAliasRegistry.registerAlias("JAVASSIST", JavassistProxyFactory.class);
-
+    //默认的语言驱动XMLLanguageDriver
     languageRegistry.setDefaultDriverClass(XMLLanguageDriver.class);
+    //注册RawLanguageDriver语言驱动
     languageRegistry.register(RawLanguageDriver.class);
   }
 
@@ -230,7 +281,9 @@ public class Configuration {
 
   public void setVfsImpl(Class<? extends VFS> vfsImpl) {
     if (vfsImpl != null) {
+      // 设置 vfsImpl 属性
       this.vfsImpl = vfsImpl;
+      // 添加到 VFS 中的自定义 VFS 类的集合
       VFS.addImplClass(this.vfsImpl);
     }
   }
@@ -602,7 +655,12 @@ public class Configuration {
     return keyGenerators.containsKey(id);
   }
 
+  /**
+   *
+   * @param cache
+   */
   public void addCache(Cache cache) {
+    //key 为namespace
     caches.put(cache.getId(), cache);
   }
 
@@ -623,8 +681,11 @@ public class Configuration {
   }
 
   public void addResultMap(ResultMap rm) {
+    // <1> 添加到 resultMaps 中
     resultMaps.put(rm.getId(), rm);
+    // 遍历全局的 ResultMap 集合，若其拥有 Discriminator 对象，则判断是否强制标记为有内嵌的 ResultMap
     checkLocallyForDiscriminatedNestedResultMaps(rm);
+    // 若传入的 ResultMap 不存在内嵌 ResultMap 并且有 Discriminator ，则判断是否需要强制表位有内嵌的 ResultMap
     checkGloballyForDiscriminatedNestedResultMaps(rm);
   }
 
@@ -760,6 +821,11 @@ public class Configuration {
     return mappedStatements.containsKey(statementName);
   }
 
+  /**
+   * 增加缓存引用，key为当前空间，value为引用的空间
+   * @param namespace
+   * @param referencedNamespace
+   */
   public void addCacheRef(String namespace, String referencedNamespace) {
     cacheRefMap.put(namespace, referencedNamespace);
   }
@@ -809,12 +875,17 @@ public class Configuration {
 
   // Slow but a one time cost. A better solution is welcome.
   protected void checkGloballyForDiscriminatedNestedResultMaps(ResultMap rm) {
+    // 如果传入的 ResultMap 有内嵌的 ResultMap
     if (rm.hasNestedResultMaps()) {
+      // 遍历全局的 ResultMap 集合
       for (Map.Entry<String, ResultMap> entry : resultMaps.entrySet()) {
         Object value = entry.getValue();
         if (value instanceof ResultMap) {
           ResultMap entryResultMap = (ResultMap) value;
+          //判断遍历的全局的 entryResultMap 不存在内嵌 ResultMap 并且有 Discriminator
           if (!entryResultMap.hasNestedResultMaps() && entryResultMap.getDiscriminator() != null) {
+            // 判断是否 Discriminator 的 ResultMap 集合中，使用了传入的 ResultMap 。
+            // 如果是，则标记为有内嵌的 ResultMap
             Collection<String> discriminatedResultMapNames = entryResultMap.getDiscriminator().getDiscriminatorMap().values();
             if (discriminatedResultMapNames.contains(rm.getId())) {
               entryResultMap.forceNestedResultMaps();
@@ -827,10 +898,13 @@ public class Configuration {
 
   // Slow but a one time cost. A better solution is welcome.
   protected void checkLocallyForDiscriminatedNestedResultMaps(ResultMap rm) {
+    // 如果传入的 ResultMap 不存在内嵌 ResultMap 并且有 Discriminator
     if (!rm.hasNestedResultMaps() && rm.getDiscriminator() != null) {
+      // 遍历传入的 ResultMap 的 Discriminator 的 ResultMap 集合
       for (Map.Entry<String, String> entry : rm.getDiscriminator().getDiscriminatorMap().entrySet()) {
         String discriminatedResultMapName = entry.getValue();
         if (hasResultMap(discriminatedResultMapName)) {
+          // 如果引用的 ResultMap 存在内嵌 ResultMap ，则标记传入的 ResultMap 存在内嵌 ResultMap
           ResultMap discriminatedResultMap = resultMaps.get(discriminatedResultMapName);
           if (discriminatedResultMap.hasNestedResultMaps()) {
             rm.forceNestedResultMaps();

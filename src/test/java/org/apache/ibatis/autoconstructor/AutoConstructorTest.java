@@ -26,6 +26,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertNotNull;
@@ -89,5 +91,25 @@ public class AutoConstructorTest {
   private void verifySubjects(final List<?> subjects) {
     assertNotNull(subjects);
     Assertions.assertThat(subjects.size()).isEqualTo(3);
+  }
+
+  @Test
+  public void testForEach() {
+    try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+      final AutoConstructorMapper mapper = sqlSession.getMapper(AutoConstructorMapper.class);
+      ArrayList<Integer> ids = new ArrayList<>();
+      ids.add(1);
+      ids.add(2);
+      mapper.getSubjectList(Arrays.asList(1,2,3,4));
+    }
+  }
+
+  @Test
+  public void testIf() {
+    try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+      final AutoConstructorMapper mapper = sqlSession.getMapper(AutoConstructorMapper.class);
+
+      mapper.getSubjecById(1);
+    }
   }
 }

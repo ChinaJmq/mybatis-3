@@ -20,8 +20,16 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="org.apache.ibatis.demo.mapper.MailMapper">
 
-    <resultMap type="org.apache.ibatis.demo.pojo.Mail" id="MailResultMap">
-        <result column="id" property="id" />
+    <cache
+            eviction="FIFO"
+            flushInterval="60000"
+            size="512"
+            readOnly="true"/>
+
+
+    <resultMap type="org.apache.ibatis.demo.pojo.Mail" id="MailResultMap" >
+       <!-- <result column="id" property="id" />-->
+        <id column="id" property="id"/>
         <result column="create_time" property="createTime" />
         <result column="modify_time" property="modifyTime" />
         <result column="web_id" property="webId" />
@@ -29,21 +37,42 @@
         <result column="use_for" property="useFor" />
     </resultMap>
 
-    <sql id="fields">
-        id, create_time, modify_time, web_id, mail, use_for
+
+    <sql id="fieldAlias" >
+         ${alias}.id,  ${alias}.create_time,  ${alias}.modify_time,  ${alias}.web_id,  ${alias}.mail, use_for
+    </sql>
+
+    <sql id="fields" >
+         create_time, modify_time, web_id, mail, use_for
     </sql>
 
     <sql id="fields_value">
-        null, now(), now(), #{webId}, #{mail}, #{useFor}
+         now(), now(), #{webId}, #{mail}, #{useFor}
     </sql>
 
-    <insert id="insertMail" parameterType="org.apache.ibatis.demo.pojo.Mail" useGeneratedKeys="true" keyProperty="id">
-        insert into mail(
+    <!--<insert  id="insertMail" parameterType="org.apache.ibatis.demo.pojo.Mail" useGeneratedKeys="true" keyProperty="id">
+        &lt;!&ndash;<selectKey keyProperty="id" order="BEFORE" resultType="String">
+            select uuid()
+        </selectKey>&ndash;&gt;
+        <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+        insert into mail (
         <include refid="fields" />
         ) values(
         <include refid="fields_value" />
         );
     </insert>
+
+    <select id="selectMailList" resultMap="MailResultMap">
+        select
+        <include refid="fieldAlias" >
+        <property name="alias" value="t" />
+        </include>
+        from mail t;
+    </select>
+
+
 
     <delete id="deleteMail" parameterType="java.lang.Long">
         delete from mail where id = #{id};
@@ -63,15 +92,31 @@
             </if>
         </set>
         where id = #{id};
-    </update>
+    </update>-->
 
-    <select id="selectMailList" resultMap="MailResultMap">
-        select <include refid="fields" /> from mail;
-    </select>
+
 
     <select id="selectMailById" resultMap="MailResultMap" parameterType="int">
-        select <include refid="fields" /> from mail where id = #{id};
+        select <include refid="fields" /> from mail
+
+        <trim prefix="where" prefixOverrides="AND |OR ">
+               and id = #{id}
+        </trim>
+
+
+        <!--<where>
+            <if test="id != null">
+                id = #{id}
+            </if>
+        </where>-->
     </select>
 
+    <select id="getSubjectList" parameterType="List" resultType="List">
+        SELECT id FROM mail
+        WHERE id IN
+        <foreach collection="ids" index="idx" item="item" open="("  close=")" separator=",">
+            #{item}
+        </foreach>
+    </select>
 
 </mapper>
