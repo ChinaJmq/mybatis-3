@@ -15,6 +15,7 @@
  */
 package org.apache.ibatis.demo.mapper;
 
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.demo.pojo.Mail;
 
@@ -54,6 +55,8 @@ public interface MailMapper {
 
     public List<Mail> getSubjectList(List ids);
 
+
+    public void paramTest(@Param("a") Integer a,Integer b,@Param("c") String c);
 
 }
 
