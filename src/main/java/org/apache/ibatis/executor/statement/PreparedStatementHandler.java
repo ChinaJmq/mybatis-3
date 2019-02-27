@@ -43,10 +43,13 @@ public class PreparedStatementHandler extends BaseStatementHandler {
 
   @Override
   public int update(Statement statement) throws SQLException {
+    // 执行写操作
     PreparedStatement ps = (PreparedStatement) statement;
     ps.execute();
+    // 获得更新数量
     int rows = ps.getUpdateCount();
     Object parameterObject = boundSql.getParameterObject();
+    // 执行 keyGenerator 的后置处理逻辑
     KeyGenerator keyGenerator = mappedStatement.getKeyGenerator();
     keyGenerator.processAfter(executor, mappedStatement, ps, parameterObject);
     return rows;
@@ -54,14 +57,17 @@ public class PreparedStatementHandler extends BaseStatementHandler {
 
   @Override
   public void batch(Statement statement) throws SQLException {
+    // 添加到批处理
     PreparedStatement ps = (PreparedStatement) statement;
     ps.addBatch();
   }
 
   @Override
   public <E> List<E> query(Statement statement, ResultHandler resultHandler) throws SQLException {
+    // 执行查询
     PreparedStatement ps = (PreparedStatement) statement;
     ps.execute();
+    // 处理返回结果
     return resultSetHandler.<E> handleResultSets(ps);
   }
 
@@ -75,6 +81,7 @@ public class PreparedStatementHandler extends BaseStatementHandler {
   @Override
   protected Statement instantiateStatement(Connection connection) throws SQLException {
     String sql = boundSql.getSql();
+    // <1> 处理 Jdbc3KeyGenerator 的情况
     if (mappedStatement.getKeyGenerator() instanceof Jdbc3KeyGenerator) {
       String[] keyColumnNames = mappedStatement.getKeyColumns();
       if (keyColumnNames == null) {
@@ -88,7 +95,7 @@ public class PreparedStatementHandler extends BaseStatementHandler {
       return connection.prepareStatement(sql, mappedStatement.getResultSetType().getValue(), ResultSet.CONCUR_READ_ONLY);
     }
   }
-
+  //设置 PreparedStatement 的占位符参数
   @Override
   public void parameterize(Statement statement) throws SQLException {
     parameterHandler.setParameters((PreparedStatement) statement);

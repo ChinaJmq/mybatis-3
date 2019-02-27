@@ -46,16 +46,20 @@ import org.apache.ibatis.session.RowBounds;
  * @author Franta Mejta
  */
 public class ResultLoaderMap {
-
+  /**
+   * LoadPair 的映射
+   */
   private final Map<String, LoadPair> loaderMap = new HashMap<>();
 
   public void addLoader(String property, MetaObject metaResultObject, ResultLoader resultLoader) {
     String upperFirst = getUppercaseFirstProperty(property);
+    // 已存在，则抛出 ExecutorException 异常
     if (!upperFirst.equalsIgnoreCase(property) && loaderMap.containsKey(upperFirst)) {
       throw new ExecutorException("Nested lazy loaded result property '" + property +
               "' for query id '" + resultLoader.mappedStatement.getId() +
               " already exists in the result map. The leftmost property of all lazy loaded properties must be unique within a result map.");
     }
+    // 创建 LoadPair 对象，添加到 loaderMap 中
     loaderMap.put(upperFirst, new LoadPair(property, metaResultObject, resultLoader));
   }
 
@@ -75,12 +79,17 @@ public class ResultLoaderMap {
     return loaderMap.containsKey(property.toUpperCase(Locale.ENGLISH));
   }
 
+  //执行指定属性的加载
   public boolean load(String property) throws SQLException {
+    // 获得 LoadPair 对象，并移除
     LoadPair pair = loaderMap.remove(property.toUpperCase(Locale.ENGLISH));
     if (pair != null) {
+      // 执行加载
       pair.load();
+      // 加载成功
       return true;
     }
+    // 加载失败
     return false;
   }
 
@@ -174,6 +183,8 @@ public class ResultLoaderMap {
     public void load() throws SQLException {
       /* These field should not be null unless the loadpair was serialized.
        * Yet in that case this method should not be called. */
+
+      // 若 metaResultObject 或 resultLoader 为空，抛出 IllegalArgumentException 异常
       if (this.metaResultObject == null) {
         throw new IllegalArgumentException("metaResultObject is null");
       }
@@ -191,8 +202,9 @@ public class ResultLoaderMap {
                   + "required parameter of mapped statement ["
                   + this.mappedStatement + "] is not serializable.");
         }
-
+        // 获得 Configuration 对象
         final Configuration config = this.getConfiguration();
+        // 获得 MappedStatement 对象
         final MappedStatement ms = config.getMappedStatement(this.mappedStatement);
         if (ms == null) {
           throw new ExecutorException("Cannot lazy load property [" + this.property
@@ -216,6 +228,7 @@ public class ResultLoaderMap {
                 old.parameterObject, old.targetType, old.cacheKey, old.boundSql);
       }
 
+      //【重点】调用 ResultLoader#loadResult() 方法，执行查询结果
       this.metaResultObject.setValue(property, this.resultLoader.loadResult());
     }
 
@@ -282,6 +295,10 @@ public class ResultLoaderMap {
     }
   }
 
+  /**
+   * 有一个 ClosedExecutor 内部静态类，继承 BaseExecutor 抽象类，已经关闭的 Executor 实现类
+   * 仅仅在 ResultLoaderMap 中，作为一个“空”的 Executor 对象。没有什么特殊的意义和用途。
+   */
   private static final class ClosedExecutor extends BaseExecutor {
 
     public ClosedExecutor() {

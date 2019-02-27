@@ -28,7 +28,9 @@ import org.apache.ibatis.session.ResultHandler;
  * @author Clinton Begin
  */
 public class DefaultMapResultHandler<K, V> implements ResultHandler<V> {
-
+  /**
+   * 结果，基于 Map 聚合
+   */
   private final Map<K, V> mappedResults;
   private final String mapKey;
   private final ObjectFactory objectFactory;
@@ -46,10 +48,12 @@ public class DefaultMapResultHandler<K, V> implements ResultHandler<V> {
 
   @Override
   public void handleResult(ResultContext<? extends V> context) {
+    // 获得 KEY 对应的属性
     final V value = context.getResultObject();
     final MetaObject mo = MetaObject.forObject(value, objectFactory, objectWrapperFactory, reflectorFactory);
     // TODO is that assignment always true?
     final K key = (K) mo.getValue(mapKey);
+    // 添加到 mappedResults 中
     mappedResults.put(key, value);
   }
 

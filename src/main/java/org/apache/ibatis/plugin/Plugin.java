@@ -27,11 +27,24 @@ import org.apache.ibatis.reflection.ExceptionUtil;
 
 /**
  * @author Clinton Begin
+ *
+ * 实现 InvocationHandler 接口，插件类，一方面提供创建动态代理对象的方法，另一方面实现对指定类的指定方法的拦截处理
  */
 public class Plugin implements InvocationHandler {
-
+  /**
+   * 目标对象
+   */
   private final Object target;
+  /**
+   * 拦截器
+   */
   private final Interceptor interceptor;
+  /**
+   * 拦截的方法映射
+   *
+   * KEY：类
+   * VALUE：方法集合
+   */
   private final Map<Class<?>, Set<Method>> signatureMap;
 
   private Plugin(Object target, Interceptor interceptor, Map<Class<?>, Set<Method>> signatureMap) {
@@ -40,15 +53,25 @@ public class Plugin implements InvocationHandler {
     this.signatureMap = signatureMap;
   }
 
+  /**
+   * 静态方法，创建目标类的代理对象
+   * @param target
+   * @param interceptor
+   * @return
+   */
   public static Object wrap(Object target, Interceptor interceptor) {
+    // <1> 获得拦截的方法映射
     Map<Class<?>, Set<Method>> signatureMap = getSignatureMap(interceptor);
+    // <2> 获得目标类的类型
     Class<?> type = target.getClass();
+    // <2> 获得目标类的接口集合
     Class<?>[] interfaces = getAllInterfaces(type, signatureMap);
+    // <3.1> 若有接口，则创建目标对象的 JDK Proxy 对象
     if (interfaces.length > 0) {
       return Proxy.newProxyInstance(
           type.getClassLoader(),
           interfaces,
-          new Plugin(target, interceptor, signatureMap));
+          new Plugin(target, interceptor, signatureMap));// 因为 Plugin 实现了 InvocationHandler 接口，所以可以作为 JDK 动态代理的调用处理器
     }
     return target;
   }
@@ -56,10 +79,13 @@ public class Plugin implements InvocationHandler {
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     try {
+      // 获得目标方法是否被拦截
       Set<Method> methods = signatureMap.get(method.getDeclaringClass());
       if (methods != null && methods.contains(method)) {
+        // 如果是，则拦截处理该方法
         return interceptor.intercept(new Invocation(target, method, args));
       }
+      // 如果不是，则调用原方法
       return method.invoke(target, args);
     } catch (Exception e) {
       throw ExceptionUtil.unwrapThrowable(e);
@@ -87,15 +113,21 @@ public class Plugin implements InvocationHandler {
   }
 
   private static Class<?>[] getAllInterfaces(Class<?> type, Map<Class<?>, Set<Method>> signatureMap) {
+    // 接口的集合
     Set<Class<?>> interfaces = new HashSet<>();
+    // 循环递归 type 类
     while (type != null) {
+      // 遍历接口集合，若在 signatureMap 中，则添加到 interfaces 中
+      //从这里可以看出，@Sinature 注解的 type 属性，必须是接口。
       for (Class<?> c : type.getInterfaces()) {
         if (signatureMap.containsKey(c)) {
           interfaces.add(c);
         }
       }
+      // 获得父类
       type = type.getSuperclass();
     }
+    // 创建接口的数组
     return interfaces.toArray(new Class<?>[interfaces.size()]);
   }
 

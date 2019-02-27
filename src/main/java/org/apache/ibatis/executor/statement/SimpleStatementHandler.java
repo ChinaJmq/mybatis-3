@@ -47,13 +47,21 @@ public class SimpleStatementHandler extends BaseStatementHandler {
     Object parameterObject = boundSql.getParameterObject();
     KeyGenerator keyGenerator = mappedStatement.getKeyGenerator();
     int rows;
+    // 如果是 Jdbc3KeyGenerator 类型
     if (keyGenerator instanceof Jdbc3KeyGenerator) {
+      // <1.1> 执行写操作，获取返回主键
       statement.execute(sql, Statement.RETURN_GENERATED_KEYS);
+      // <2.2> 获得更新数量
       rows = statement.getUpdateCount();
+      // <1.3> 执行 keyGenerator 的后置处理逻辑
       keyGenerator.processAfter(executor, mappedStatement, statement, parameterObject);
+     // 如果是 SelectKeyGenerator 类型
     } else if (keyGenerator instanceof SelectKeyGenerator) {
+      // <2.1> 执行写操作
       statement.execute(sql);
+      // <2.2> 获得更新数量
       rows = statement.getUpdateCount();
+      // <2.3> 执行 keyGenerator 的后置处理逻辑
       keyGenerator.processAfter(executor, mappedStatement, statement, parameterObject);
     } else {
       statement.execute(sql);
@@ -64,14 +72,17 @@ public class SimpleStatementHandler extends BaseStatementHandler {
 
   @Override
   public void batch(Statement statement) throws SQLException {
+    // 添加到批处理
     String sql = boundSql.getSql();
     statement.addBatch(sql);
   }
 
   @Override
   public <E> List<E> query(Statement statement, ResultHandler resultHandler) throws SQLException {
+    // <1> 执行查询
     String sql = boundSql.getSql();
     statement.execute(sql);
+    // <2> 处理返回结果
     return resultSetHandler.<E>handleResultSets(statement);
   }
 
@@ -90,7 +101,7 @@ public class SimpleStatementHandler extends BaseStatementHandler {
       return connection.createStatement(mappedStatement.getResultSetType().getValue(), ResultSet.CONCUR_READ_ONLY);
     }
   }
-
+  //空，因为无需做占位符参数的处理。
   @Override
   public void parameterize(Statement statement) throws SQLException {
     // N/A

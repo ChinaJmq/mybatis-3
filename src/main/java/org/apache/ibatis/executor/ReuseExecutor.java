@@ -35,9 +35,16 @@ import org.apache.ibatis.transaction.Transaction;
 
 /**
  * @author Clinton Begin
+ * 每次开始读或写操作，优先从缓存中获取对应的 Statement 对象。如果不存在，才进行创建。
+ * 执行完成后，不关闭该 Statement 对象。
+ * 其它的，和 SimpleExecutor 是一致的。
  */
 public class ReuseExecutor extends BaseExecutor {
-
+  /**
+   * Statement 的缓存
+   *
+   * KEY ：SQL
+   */
   private final Map<String, Statement> statementMap = new HashMap<>();
 
   public ReuseExecutor(Configuration configuration, Transaction transaction) {
@@ -55,7 +62,9 @@ public class ReuseExecutor extends BaseExecutor {
   @Override
   public <E> List<E> doQuery(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) throws SQLException {
     Configuration configuration = ms.getConfiguration();
-    StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
+    // 创建 StatementHandler 对象
+    StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);    // <1> 初始化 StatementHandler 对象
+    // <1> 初始化 Statement 对象
     Statement stmt = prepareStatement(handler, ms.getStatementLog());
     return handler.<E>query(stmt, resultHandler);
   }
@@ -70,10 +79,13 @@ public class ReuseExecutor extends BaseExecutor {
 
   @Override
   public List<BatchResult> doFlushStatements(boolean isRollback) throws SQLException {
+    // 关闭缓存的 Statement 对象们
     for (Statement stmt : statementMap.values()) {
       closeStatement(stmt);
     }
+    //清空statementMap
     statementMap.clear();
+    // 返回空集合
     return Collections.emptyList();
   }
 
@@ -81,19 +93,27 @@ public class ReuseExecutor extends BaseExecutor {
     Statement stmt;
     BoundSql boundSql = handler.getBoundSql();
     String sql = boundSql.getSql();
+    // 存在
     if (hasStatementFor(sql)) {
+      // <1.1> 从缓存中获得 Statement 或 PrepareStatement 对象
       stmt = getStatement(sql);
+      // <1.2> 设置事务超时时间
       applyTransactionTimeout(stmt);
     } else {
+      // <2.1> 获得 Connection 对象
       Connection connection = getConnection(statementLog);
+      // <2.2> 创建 Statement 或 PrepareStatement 对象
       stmt = handler.prepare(connection, transaction.getTimeout());
+      // <2.3> 添加到缓存中
       putStatement(sql, stmt);
     }
+    // <2> 设置 SQL 上的参数，例如 PrepareStatement 对象上的占位符
     handler.parameterize(stmt);
     return stmt;
   }
 
   private boolean hasStatementFor(String sql) {
+//    判断是否存在对应的 Statement 对象,并且，要求连接未关闭
     try {
       return statementMap.keySet().contains(sql) && !statementMap.get(sql).getConnection().isClosed();
     } catch (SQLException e) {

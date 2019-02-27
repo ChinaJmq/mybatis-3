@@ -55,12 +55,15 @@ public class CachingExecutor implements Executor {
   public void close(boolean forceRollback) {
     try {
       //issues #499, #524 and #573
-      if (forceRollback) { 
+      // 如果强制回滚，则回滚 TransactionalCacheManager
+      if (forceRollback) {
         tcm.rollback();
+        // 如果强制提交，则提交 TransactionalCacheManager
       } else {
         tcm.commit();
       }
     } finally {
+      // 执行 delegate 对应的方法
       delegate.close(forceRollback);
     }
   }
@@ -72,20 +75,26 @@ public class CachingExecutor implements Executor {
 
   @Override
   public int update(MappedStatement ms, Object parameterObject) throws SQLException {
+    // 如果需要清空缓存，则进行清空
     flushCacheIfRequired(ms);
+    // 执行 delegate 对应的方法
     return delegate.update(ms, parameterObject);
   }
 
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+    // 获得 BoundSql 对象
     BoundSql boundSql = ms.getBoundSql(parameterObject);
+    // 创建 CacheKey 对象
     CacheKey key = createCacheKey(ms, parameterObject, rowBounds, boundSql);
     return query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
 
   @Override
   public <E> Cursor<E> queryCursor(MappedStatement ms, Object parameter, RowBounds rowBounds) throws SQLException {
+    // 如果需要清空缓存，则进行清空
     flushCacheIfRequired(ms);
+    // 执行 delegate 对应的方法
     return delegate.queryCursor(ms, parameter, rowBounds);
   }
 
@@ -94,18 +103,25 @@ public class CachingExecutor implements Executor {
       throws SQLException {
     Cache cache = ms.getCache();
     if (cache != null) {
+      // <2.1> 如果需要清空缓存，则进行清空
       flushCacheIfRequired(ms);
+      //默认开启。可通过 @Options(useCache = false) 或 <select useCache="false"> 方法，关闭。
       if (ms.isUseCache() && resultHandler == null) {
+        // 暂时忽略，存储过程相关
         ensureNoOutParams(ms, boundSql);
         @SuppressWarnings("unchecked")
+        // <2.3> 从二级缓存中，获取结果
         List<E> list = (List<E>) tcm.getObject(cache, key);
+        // <2.4.1> 如果不存在，则从数据库中查询
         if (list == null) {
           list = delegate.<E> query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
+          // <2.4.2> 缓存结果到二级缓存中
           tcm.putObject(cache, key, list); // issue #578 and #116
         }
         return list;
       }
     }
+    // <3> 不使用缓存，则从数据库中查询
     return delegate.<E> query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
 
@@ -116,15 +132,19 @@ public class CachingExecutor implements Executor {
 
   @Override
   public void commit(boolean required) throws SQLException {
+    // 执行 delegate 对应的方法
     delegate.commit(required);
+    // 提交 TransactionalCacheManager
     tcm.commit();
   }
 
   @Override
   public void rollback(boolean required) throws SQLException {
     try {
+      // 执行 delegate 对应的方法
       delegate.rollback(required);
     } finally {
+      // 回滚 TransactionalCacheManager
       if (required) {
         tcm.rollback();
       }
@@ -161,9 +181,13 @@ public class CachingExecutor implements Executor {
     delegate.clearLocalCache();
   }
 
+  /**
+   * 通过 @Options(flushCache = Options.FlushCachePolicy.TRUE) 或 <select flushCache="true"> 方式，开启需要清空缓存。
+   * @param ms
+   */
   private void flushCacheIfRequired(MappedStatement ms) {
     Cache cache = ms.getCache();
-    if (cache != null && ms.isFlushCacheRequired()) {      
+    if (cache != null && ms.isFlushCacheRequired()) {  // 是否需要清空缓存
       tcm.clear(cache);
     }
   }

@@ -2,8 +2,12 @@ package org.apache.ibatis.demo.util;
 
 import ognl.Ognl;
 import ognl.OgnlException;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.demo.mapper.MailMapper;
 import org.apache.ibatis.demo.pojo.Mail;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.StringTokenizer;
 
 /**
@@ -13,23 +17,21 @@ import java.util.StringTokenizer;
  */
 public class Main {
 
-    public static void main(String[] args) {
-        Mail user = new Mail();
-        user.setWebId(11);
-        user.setMail("2222");
-        try
-        {
-            System.out.println(Ognl.getValue("webId", user,user.getClass()));
-            System.out.println(Ognl.getValue("mail", user,user.getClass()));
+    public static void main(String[] args) throws NoSuchMethodException {
+        Method paramTest = MailMapper.class.getMethod("paramTest", new Class[]{Integer.class,Integer.class,String.class});
+        Annotation[][] parameterAnnotations = paramTest.getParameterAnnotations();
+        System.out.println(parameterAnnotations.length);
+        int count = parameterAnnotations.length;
 
-            //输出结果：
-            //rcx
-            //com.rcx.ognl.Address@dda25b
-            //110003
+        for (int i = 0; i < count; i++) {
+            for (Annotation annotation : parameterAnnotations[i]) {
+                if (annotation instanceof Param) {
+
+                }
+            }
+
         }
-        catch (OgnlException e)
-        {
-            e.printStackTrace();
-        }
+
+
     }
 }

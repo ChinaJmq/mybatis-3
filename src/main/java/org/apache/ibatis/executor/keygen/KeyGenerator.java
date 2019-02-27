@@ -25,8 +25,30 @@ import org.apache.ibatis.mapping.MappedStatement;
  */
 public interface KeyGenerator {
 
+  /**
+   * SQL 执行前
+   * @param executor
+   * @param ms
+   * @param stmt
+   * @param parameter
+   *
+   *
+   * @Options(useGeneratedKeys = true, keyProperty = "id")
+   * @Insert({"insert into country (countryname,countrycode) values (#{countryname},#{countrycode})"})
+   * int insertBean(Country country);
+   *
+   * 上面的，country 方法参数，就是一个 parameter 参数。
+   * KeyGenerator 在获取到主键后，会设置回 parameter 参数的对应属性。
+   */
   void processBefore(Executor executor, MappedStatement ms, Statement stmt, Object parameter);
 
+  /**
+   * SQL 执行后
+   * @param executor
+   * @param ms
+   * @param stmt
+   * @param parameter
+   */
   void processAfter(Executor executor, MappedStatement ms, Statement stmt, Object parameter);
 
 }

@@ -46,7 +46,7 @@ public class DefaultParameterHandler implements ParameterHandler {
      */
   private final MappedStatement mappedStatement;
     /**
-     * 参数对象
+     * 参数对象，用户传入的实参
      */
   private final Object parameterObject;
     /**

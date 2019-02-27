@@ -43,7 +43,7 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
 
   /**
    * A shared instance.
-   * 
+   * 共享的单例
    * @since 3.4.3
    */
   public static final Jdbc3KeyGenerator INSTANCE = new Jdbc3KeyGenerator();
@@ -59,19 +59,24 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
   }
 
   public void processBatch(MappedStatement ms, Statement stmt, Object parameter) {
+    // <1> 获得主键属性的配置。如果为空，则直接返回，说明不需要主键
     final String[] keyProperties = ms.getKeyProperties();
     if (keyProperties == null || keyProperties.length == 0) {
       return;
     }
     ResultSet rs = null;
     try {
+      // <2> 获得返回的自增主键
       rs = stmt.getGeneratedKeys();
       final Configuration configuration = ms.getConfiguration();
       if (rs.getMetaData().getColumnCount() >= keyProperties.length) {
+        // <3> 获得唯一的参数对象
         Object soleParam = getSoleParameter(parameter);
         if (soleParam != null) {
+          // <3.1> 设置主键们，到参数 soleParam 中
           assignKeysToParam(configuration, rs, keyProperties, soleParam);
         } else {
+          // <3.2> 设置主键们，到参数 parameter 中
           assignKeysToOneOfParams(configuration, rs, keyProperties, (Map<?, ?>) parameter);
         }
       }
@@ -80,6 +85,7 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
     } finally {
       if (rs != null) {
         try {
+          // <4> 关闭 ResultSet 对象
           rs.close();
         } catch (Exception e) {
           // ignore
@@ -130,6 +136,7 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
     final TypeHandlerRegistry typeHandlerRegistry = configuration.getTypeHandlerRegistry();
     final ResultSetMetaData rsmd = rs.getMetaData();
     // Wrap the parameter in Collection to normalize the logic.
+    // <1> 包装成 Collection 对象,通过这样的方式，使单个 param 参数的情况下，可以统一
     Collection<?> paramAsCollection = null;
     if (param instanceof Object[]) {
       paramAsCollection = Arrays.asList((Object[]) param);
@@ -139,22 +146,37 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
       paramAsCollection = (Collection<?>) param;
     }
     TypeHandler<?>[] typeHandlers = null;
+    // <2> 遍历 paramAsCollection 数组
     for (Object obj : paramAsCollection) {
+      // <2.1> 顺序遍历 rs
       if (!rs.next()) {
         break;
       }
+      // <2.2> 创建 MetaObject 对象,实现对 obj 对象的属性访问
       MetaObject metaParam = configuration.newMetaObject(obj);
+      // <2.3> 获得 TypeHandler 数组
       if (typeHandlers == null) {
         typeHandlers = getTypeHandlers(typeHandlerRegistry, metaParam, keyProperties, rsmd);
       }
+      // <2.4> 填充主键们
       populateKeys(rs, metaParam, keyProperties, typeHandlers);
     }
   }
-
+  /**
+   * 获得唯一的参数对象
+   *
+   * 如果获得不到唯一的参数对象，则返回 null
+   *
+   * @param parameter 参数对象
+   * @return 唯一的参数对象
+   */
   private Object getSoleParameter(Object parameter) {
+    // <1> 如果非 Map 对象，则直接返回 parameter
     if (!(parameter instanceof ParamMap || parameter instanceof StrictMap)) {
       return parameter;
     }
+    // <3> 如果是 Map 对象，则获取第一个元素的值
+    // <2> 如果有多个元素，则说明获取不到唯一的参数对象，则返回 null
     Object soleParam = null;
     for (Object paramValue : ((Map<?, ?>) parameter).values()) {
       if (soleParam == null) {
@@ -167,6 +189,15 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
     return soleParam;
   }
 
+  /**
+   * 获得主键们，对应的每个属性的，对应的 TypeHandler 对象
+   * @param typeHandlerRegistry
+   * @param metaParam
+   * @param keyProperties
+   * @param rsmd
+   * @return
+   * @throws SQLException
+   */
   private TypeHandler<?>[] getTypeHandlers(TypeHandlerRegistry typeHandlerRegistry, MetaObject metaParam, String[] keyProperties, ResultSetMetaData rsmd) throws SQLException {
     TypeHandler<?>[] typeHandlers = new TypeHandler<?>[keyProperties.length];
     for (int i = 0; i < keyProperties.length; i++) {
@@ -182,11 +213,16 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
   }
 
   private void populateKeys(ResultSet rs, MetaObject metaParam, String[] keyProperties, TypeHandler<?>[] typeHandlers) throws SQLException {
+    // 遍历 keyProperties
     for (int i = 0; i < keyProperties.length; i++) {
+      // 获得属性名
       String property = keyProperties[i];
+      // 获得 TypeHandler 对象
       TypeHandler<?> th = typeHandlers[i];
       if (th != null) {
+        // 从 rs 中，获得对应的 值
         Object value = th.getResult(rs, i + 1);
+
         metaParam.setValue(property, value);
       }
     }

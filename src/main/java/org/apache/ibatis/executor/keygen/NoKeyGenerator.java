@@ -23,6 +23,7 @@ import org.apache.ibatis.mapping.MappedStatement;
 /**
  * @author Clinton Begin
  * @author Kazuki Shimizu
+ * 实现 KeyGenerator 接口，空的 KeyGenerator 实现类，即无需主键生成
  */
 public class NoKeyGenerator implements KeyGenerator {
 
